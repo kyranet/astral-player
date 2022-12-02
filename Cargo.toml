@@ -1,0 +1,11 @@
+[workspace]
+members = ["crates/*"]
+default-members = ["crates/astral-player"]
+
+[workspace.package]
+authors = [
+	"Aura Román <kyradiscord@gmail.com>",
+	"Tyler J. Russell <t@kludgecs.com>",
+]
+edition = "2021"
+license = "MIT"
