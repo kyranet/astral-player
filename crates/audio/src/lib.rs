@@ -1,3 +1,4 @@
+pub mod stream;
 pub mod track;
 
 #[cfg(test)]

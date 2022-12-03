@@ -1,5 +1,6 @@
-use std::fs::File;
+use std::{fs::File, time::Duration};
 
+use cpal::Sample;
 use symphonia::{
 	core::{
 		audio::SampleBuffer, codecs::DecoderOptions, errors::Result,
@@ -11,6 +12,9 @@ use symphonia::{
 
 pub struct Track {
 	pub data: Vec<f32>,
+	pub rate: u32,
+	pub offset: usize,
+	pub repeat: bool,
 	// decoder: Box<dyn Decoder>,
 	// format: Box<dyn FormatReader>,
 	// buffer: SampleBuffer<f32>,
@@ -41,6 +45,7 @@ impl Track {
 
 		// Get the default track.
 		let track = format.default_track().unwrap();
+		let rate = track.codec_params.sample_rate.unwrap_or(0u32);
 
 		// Create a decoder for the track.
 		let mut decoder =
@@ -118,6 +123,40 @@ impl Track {
 			}
 		}
 
-		Ok(Self { data })
+		Ok(Self { data, rate, offset: 0, repeat: false })
+	}
+
+	pub fn duration(&self) -> Duration {
+		if self.rate == 0 {
+			Duration::MAX
+		} else {
+			Duration::from_secs_f64(self.data.len() as f64 / self.rate as f64)
+		}
+	}
+
+	pub fn finished(&self) -> bool {
+		self.offset == self.data.len()
+	}
+
+	pub fn write_stream<T: Sample>(&mut self, data: &mut [T]) {
+		let mut written = 0usize;
+		for sample in data.iter_mut() {
+			if self.finished() {
+				if self.repeat {
+					self.offset = 0;
+				} else {
+					break;
+				}
+			}
+
+			*sample = Sample::from(&self.data[self.offset]);
+			self.offset += 1;
+			written += 1;
+		}
+
+		let zero: T = Sample::from(&0.0);
+		for sample in data.iter_mut().skip(written) {
+			*sample = zero;
+		}
 	}
 }
