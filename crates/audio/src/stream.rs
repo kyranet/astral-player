@@ -34,7 +34,7 @@ impl OutputStream {
 		println!("Format: {:?}. Rate: {:?}", format, rate);
 
 		Ok(Self {
-			track: Arc::new(Mutex::new(None)),
+			track: Arc::default(),
 			device,
 			config: config.into(),
 			format,
@@ -91,6 +91,6 @@ impl OutputStream {
 	}
 
 	pub fn set_track(&mut self, track: Track) {
-		*self.track.lock().unwrap() = Some(track);
+		self.track.lock().unwrap().replace(track);
 	}
 }

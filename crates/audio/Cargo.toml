@@ -8,4 +8,4 @@ license.workspace = true
 
 [dependencies]
 cpal = "0.14.2"
-symphonia = { version = "0.5.1", features = ["mp3"] }
+symphonia = { version = "0.5.1", features = ["wav", "ogg", "flac", "mp3"], default-features = false }
