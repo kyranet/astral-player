@@ -8,6 +8,15 @@ use cpal::{
 
 use crate::track::Track;
 
+macro_rules! stream_data_callback {
+	($x:ty, $track:ident) => {
+		move |data: &mut [$x], _| {
+			if let Ok(mut d) = $track.lock() {
+				d.as_mut().map(|d| d.write_stream(data));
+			}
+		}
+	};
+}
 pub struct OutputStream {
 	track: Arc<Mutex<Option<Track>>>,
 	device: Device,
@@ -50,29 +59,17 @@ impl OutputStream {
 		let stream = match &self.format {
 			SampleFormat::I16 => self.device.build_output_stream(
 				&self.config,
-				move |data: &mut [i16], _: &OutputCallbackInfo| {
-					if let Ok(mut d) = track.lock() {
-						d.as_mut().map(|d| d.write_stream(data));
-					}
-				},
+				stream_data_callback!(i16, track),
 				error_callback,
 			),
 			SampleFormat::U16 => self.device.build_output_stream(
 				&self.config,
-				move |data: &mut [u16], _: &OutputCallbackInfo| {
-					if let Ok(mut d) = track.lock() {
-						d.as_mut().map(|d| d.write_stream(data));
-					}
-				},
+				stream_data_callback!(u16, track),
 				error_callback,
 			),
 			SampleFormat::F32 => self.device.build_output_stream(
 				&self.config,
-				move |data: &mut [f32], _: &OutputCallbackInfo| {
-					if let Ok(mut d) = track.lock() {
-						d.as_mut().map(|d| d.write_stream(data));
-					}
-				},
+				stream_data_callback!(f32, track),
 				error_callback,
 			),
 		}
