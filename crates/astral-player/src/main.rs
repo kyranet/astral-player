@@ -7,15 +7,15 @@ use std::{
 	path::Path,
 };
 
-use rodio::{Decoder, OutputStream, Sink, Source};
-use terminal::{Terminal, keys::*};
 use crossterm::{
-	event::{read, Event},
 	cursor,
+	event::{read, Event},
 	execute,
 	style::Stylize,
 	Result as TermResult,
 };
+use rodio::{Decoder, OutputStream, Sink, Source};
+use terminal::{keys::*, Terminal};
 
 fn main() -> TermResult<()> {
 	let args: Vec<String> = env::args().collect();
@@ -34,10 +34,7 @@ fn main() -> TermResult<()> {
 		"Playing    : {}",
 		path.file_name().and_then(|f| f.to_str()).unwrap_or("Unknown").cyan(),
 	);
-	println!(
-		"Sample rate: {} Hz",
-		source.sample_rate().to_string().cyan(),
-	);
+	println!("Sample rate: {} Hz", source.sample_rate().to_string().cyan());
 	println!(
 		"Duration   : {}\n\n",
 		source
@@ -57,16 +54,16 @@ fn main() -> TermResult<()> {
 				SIGINT | QUIT => {
 					write!(term.handle, "\r⏹️ Quitting...")?;
 					break;
-				},
+				}
 				TOGGLE_PLAY => {
 					if sink.is_paused() {
-						write!(term.handle, "\r⏯️ Playing")?;					
+						write!(term.handle, "\r⏯️ Playing")?;
 						sink.play();
 					} else {
-						write!(term.handle, "\r⏸️ Paused")?;						
+						write!(term.handle, "\r⏸️ Paused ")?;
 						sink.pause();
 					}
-				},
+				}
 				_ => (),
 			}
 			term.handle.flush()?;

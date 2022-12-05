@@ -19,7 +19,13 @@ impl Terminal {
 
 	pub fn init(&mut self) -> io::Result<&mut Self> {
 		enable_raw_mode()?;
-		execute!(self.handle, EnterAlternateScreen, cursor::Hide, SetTitle("Astral Player")).unwrap();
+		execute!(
+			self.handle,
+			EnterAlternateScreen,
+			cursor::Hide,
+			SetTitle("Astral Player")
+		)
+		.unwrap();
 		Ok(self)
 	}
 }
