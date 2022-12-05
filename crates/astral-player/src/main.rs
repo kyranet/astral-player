@@ -1,3 +1,5 @@
+mod terminal;
+
 use std::{
 	env,
 	fs::File,
@@ -5,10 +7,17 @@ use std::{
 	path::Path,
 };
 
-use console::{Emoji, Style, Term};
 use rodio::{Decoder, OutputStream, Sink, Source};
+use terminal::{Terminal, keys::*};
+use crossterm::{
+	event::{read, Event},
+	cursor,
+	execute,
+	style::Stylize,
+	Result as TermResult,
+};
 
-fn main() {
+fn main() -> TermResult<()> {
 	let args: Vec<String> = env::args().collect();
 	let path = Path::new(args.get(1).expect("Expected a file path"));
 	let file = File::open(path).expect("Could not open specified file");
@@ -18,65 +27,50 @@ fn main() {
 
 	let source = Decoder::new(BufReader::new(file)).unwrap();
 
-	let cyan = Style::new().cyan();
-	let mut term = Term::stdout();
-	term.set_title("Astral Player");
-	let _ = term.hide_cursor();
+	let mut term = Terminal::with_stdout(std::io::stdout());
+	term.init()?;
 
-	let _ = writeln!(
-		term,
+	println!(
 		"Playing    : {}",
-		cyan.apply_to(
-			path.file_name().and_then(|f| f.to_str()).unwrap_or("Unknown")
-		)
+		path.file_name().and_then(|f| f.to_str()).unwrap_or("Unknown").cyan(),
 	);
-	let _ = writeln!(
-		term,
-		"Sample rate: {}Hz",
-		cyan.apply_to(source.sample_rate())
+	println!(
+		"Sample rate: {} Hz",
+		source.sample_rate().to_string().cyan(),
 	);
-	let _ = writeln!(
-		term,
+	println!(
 		"Duration   : {}\n\n",
-		cyan.apply_to(
-			source
-				.total_duration()
-				.map(|f| format!("{f:?}"))
-				.unwrap_or("Unknown".to_string())
-		)
+		source
+			.total_duration()
+			.map(|f| format!("{f:?}"))
+			.unwrap_or("Unknown".to_string())
+			.cyan(),
 	);
-
-	let line = format!(
-		"[{}] Quit [{}] Stop [{}] Play",
-		cyan.apply_to('Q'),
-		cyan.apply_to('S'),
-		cyan.apply_to('P')
-	);
-	let _ = term.write_line(line.as_str());
-	let _ = term.move_cursor_up(2);
+	print!("[{}] Quit [{}] Toggle Play", "Q".cyan(), "P".cyan());
+	execute!(term.handle, cursor::MoveUp(1))?;
 
 	sink.append(source.repeat_infinite());
 
 	loop {
-		if let Ok(char) = term.read_char() {
-			match char {
-				'q' => {
-					let _ = write!(term, "\r{}Quitting...", Emoji("⏹️ ", ""));
-					let _ = term.move_cursor_down(1);
-					let _ = term.clear_line();
-					let _ = term.move_cursor_up(1);
+		if let Event::Key(key_event) = read()? {
+			match (key_event.modifiers, key_event.code) {
+				SIGINT | QUIT => {
+					write!(term.handle, "\r⏹️ Quitting...")?;
 					break;
-				}
-				's' => {
-					let _ = write!(term, "\r{}Paused     ", Emoji("⏸️ ", ""));
-					sink.pause();
-				}
-				'p' => {
-					let _ = write!(term, "\r{}Playing    ", Emoji("⏯️ ", ""));
-					sink.play();
-				}
+				},
+				TOGGLE_PLAY => {
+					if sink.is_paused() {
+						write!(term.handle, "\r⏯️ Playing")?;					
+						sink.play();
+					} else {
+						write!(term.handle, "\r⏸️ Paused")?;						
+						sink.pause();
+					}
+				},
 				_ => (),
 			}
+			term.handle.flush()?;
 		}
 	}
+	Ok(())
 }

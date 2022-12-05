@@ -7,5 +7,5 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-console = "0.15.2"
+crossterm = "0.25.0"
 rodio = { version = "0.16.0", features = ["symphonia-all"] }
